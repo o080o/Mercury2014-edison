@@ -96,19 +96,33 @@ function GPIO:getState()
 	end
 end
 
-pwmmux = {}
-pwmmux[12] = 1
-pwmmux[13] = 1
-pwmmux[182] = 1
-pwmmux[183] = 1
+local pwmlookup = {}
+pwmlookup[12]=0
+pwmlookup[13]=1
+pwmlookup[182]=2
+pwmlookup[183]=3
 
 
 local PWM = class()
-function PWM:__init(pin)
+function PWM:__init(pin, period)
+	self.pwm = pwmlookup[pin]
+	self.period = period
+	setMode(pin, 1)
+	write("/sys/class/pwm/pwmchip0/export",tostring(self.pwm))
+	write("/sys/class/pwm/pwmchip0/pwm"..tostring(self.pwm).."/enable", 1)
+	self:setPeriod(period)
+	self:setValue(0)
 end
-function PWM:write(val)
+function PWM:setValue(val)
+	if val > 1 then val = 1 end
+	if val < 0 then val = 0 end
+	--val = math.max(0, math.min(1,val))
+	self.val = val
+	write("/sys/class/pwm/pwmchip0/pwm"..tostring(self.pwm).."/duty_cycle", tostring( math.ceil(val * self.period)))
 end
-function PWM:period(period)
+function PWM:setPeriod(period)
+	self.period = period
+	write("/sys/class/pwm/pwmchip0/pwm"..tostring(self.pwm).."/period", tostring(period))
 end
 
 local SPI = class()
@@ -120,5 +134,6 @@ end
 
 
 gpio.GPIO = GPIO
+gpio.PWM = PWM
 
 return gpio
