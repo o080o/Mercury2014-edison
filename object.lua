@@ -12,4 +12,5 @@ local function class()
 	return setmetatable(classObj, classMt)
 end
 
+
 return class
